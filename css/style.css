@@ -570,6 +570,29 @@ textarea {
 }
 
 /* Map Filters */
+/* Map Controls */
+.tracking-active {
+    background-color: #E3F2FD !important;
+    /* Light Blue */
+    color: #1976D2 !important;
+    border-color: #1976D2 !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+}
+
 .map-filters-panel {
     background: white;
     border-radius: var(--radius-lg);

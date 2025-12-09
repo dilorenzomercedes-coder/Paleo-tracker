@@ -11,6 +11,13 @@ class MapManager {
             hallazgosFolder: 'all',
             astillasFolder: 'all'
         };
+        // Tracking State
+        this.watchId = null;
+        this.isTracking = false;
+        this.isRecordingPath = false;
+        this.userMarker = null;
+        this.userPath = null;
+        this.pathCoords = [];
     }
 
     init(elementId) {
@@ -201,6 +208,95 @@ class MapManager {
             return { success: true, message: `Se cargaron ${foundCount} elementos.` };
         } else {
             return { success: false, message: "No se encontraron coordenadas válidas (LineString o Point) en el archivo." };
+        }
+    }
+    // --- Real-time Location Tracking ---
+
+    toggleTracking(enable, onUpdate) {
+        if (enable) {
+            if (this.isTracking) return; // Already tracking
+
+            if (!navigator.geolocation) {
+                alert("Geolocalización no soportada en este navegador.");
+                return;
+            }
+
+            this.isTracking = true;
+            this.pathCoords = []; // Reset path on new start? Or keep? Let's reset for this session.
+
+            // Create marker and path if not exist
+            if (!this.userMarker) {
+                this.userMarker = L.circleMarker([0, 0], {
+                    radius: 8,
+                    fillColor: '#2196F3',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(this.map);
+                this.userMarker.bindPopup("Estás aquí");
+            }
+
+            if (!this.userPath) {
+                this.userPath = L.polyline([], { color: '#2196F3', weight: 4, dashArray: '5, 10' }).addTo(this.map);
+            } else {
+                this.userPath.setLatLngs([]);
+            }
+
+            this.watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    this.updateUserLocation(lat, lng);
+                    if (onUpdate) onUpdate({ lat, lng });
+                },
+                (error) => {
+                    console.error("Error watching position:", error);
+                    alert("Error al obtener ubicación: " + error.message);
+                    this.toggleTracking(false); // Stop on error
+                },
+                { enableHighAccuracy: true, maximumAge: 10000 }
+            );
+
+        } else {
+            // Stop tracking
+            this.isTracking = false;
+            if (this.watchId !== null) {
+                navigator.geolocation.clearWatch(this.watchId);
+                this.watchId = null;
+            }
+            // Optional: Remove marker/path when stopping? 
+            // Or keep them to show where you walked? Let's keep them.
+        }
+    }
+
+    setRecordingPath(enabled) {
+        this.isRecordingPath = enabled;
+        if (enabled && this.isTracking && this.pathCoords.length === 0 && this.userMarker) {
+            // If starting to record while already tracking, add current point start
+            const latLng = this.userMarker.getLatLng();
+            this.pathCoords.push(latLng);
+        }
+    }
+
+    updateUserLocation(lat, lng) {
+        if (!this.map) return;
+        const latLng = [lat, lng];
+
+        // Update Marker
+        if (this.userMarker) {
+            this.userMarker.setLatLng(latLng);
+            if (!this.map.getBounds().contains(latLng)) {
+                this.map.panTo(latLng);
+            }
+        }
+
+        // Update Path - Only if recording
+        if (this.isRecordingPath) {
+            this.pathCoords.push(latLng);
+            if (this.userPath) {
+                this.userPath.setLatLngs(this.pathCoords);
+            }
         }
     }
 }

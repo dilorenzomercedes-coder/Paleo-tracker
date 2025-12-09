@@ -89,6 +89,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Tracking ---
+    const btnToggleTracking = document.getElementById('btn-toggle-tracking');
+    if (btnToggleTracking) {
+        btnToggleTracking.addEventListener('click', () => {
+            const isTracking = btnToggleTracking.classList.toggle('tracking-active');
+
+            if (isTracking) {
+                btnToggleTracking.innerHTML = '<span>◉</span> Detener Seguimiento';
+                mapManager.toggleTracking(true);
+            } else {
+                btnToggleTracking.innerHTML = '<span>◎</span> Iniciar Seguimiento';
+                mapManager.toggleTracking(false);
+            }
+        });
+    }
+
+    const chkRecordPath = document.getElementById('chk-record-path');
+    if (chkRecordPath) {
+        chkRecordPath.addEventListener('change', (e) => {
+            mapManager.setRecordingPath(e.target.checked);
+        });
+    }
+
     // --- Navigation ---
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -515,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PWA Registration ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js')
+            navigator.serviceWorker.register('./service-worker.js', { scope: '/Paleo-tracker/' })
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 }, err => {
