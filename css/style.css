@@ -219,6 +219,74 @@ body {
     background: rgba(0, 0, 0, 0.05);
 }
 
+.tracking-control.modern-card {
+    padding: 12px;
+    border: 1px solid rgba(44, 94, 46, 0.1);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #f6fbf6, #edf6ef);
+    box-shadow: 0 10px 26px rgba(27, 61, 29, 0.08);
+}
+
+.tracking-btn {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    color: #fff;
+    border: none;
+    padding: 14px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    box-shadow: 0 12px 30px rgba(44, 94, 46, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.tracking-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px rgba(44, 94, 46, 0.32);
+    filter: brightness(1.05);
+}
+
+.tracking-btn.tracking-active {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    box-shadow: 0 12px 30px rgba(27, 61, 29, 0.32);
+}
+
+.record-toggle {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    justify-content: center;
+    background: #f8fff9;
+    border: 1px dashed rgba(44, 94, 46, 0.3);
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    gap: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.record-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-light);
+}
+
+.btn-save-modern {
+    margin-top: 6px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    box-shadow: 0 10px 26px rgba(44, 94, 46, 0.22);
+    border: none;
+}
+
+.btn-save-modern:hover {
+    filter: brightness(1.05);
+}
+
 .btn-close {
     background: none;
     border: none;
@@ -531,6 +599,21 @@ textarea {
     width: 100%;
     height: auto;
     display: block;
+}
+
+.image-preview-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+.image-preview-grid img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Radio Group */

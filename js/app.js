@@ -2,8 +2,10 @@
 
 // alert("App JS Loaded!"); // Immediate check
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const store = new Store();
+    await store.ready();
+
     const ui = new UI(store);
     const mapManager = new MapManager(store);
 
@@ -304,10 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            // Handle image as DataURL
-            const fileInput = document.getElementById('hallazgo-foto');
-            if (fileInput && fileInput.files[0]) {
-                data.foto = await toBase64(fileInput.files[0]);
+            const fotosInput = document.getElementById('hallazgo-fotos');
+            if (fotosInput && fotosInput.files.length > 0) {
+                data.fotos = await filesToBase64Array(fotosInput.files, 10);
             }
 
             // Check if we're editing
@@ -323,8 +324,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.updateFolderLists();
             ui.toggleModal('hallazgos-form-container', false);
             e.target.reset();
-            const preview = document.getElementById('hallazgo-foto-preview');
+
+            // Clear photo preview
+            const preview = document.getElementById('hallazgo-fotos-preview');
             if (preview) preview.innerHTML = '';
+
             // Clear GPS status
             document.getElementById('hallazgo-gps-status').textContent = '';
         });
@@ -338,10 +342,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            const fileInput = document.getElementById('astilla-foto');
-            if (fileInput && fileInput.files[0]) {
-                data.foto = await toBase64(fileInput.files[0]);
+            const fileInput = document.getElementById('astilla-fotos');
+            if (fileInput && fileInput.files.length > 0) {
+                data.fotos = await filesToBase64Array(fileInput.files, 6);
             }
+            if (data.observaciones) data.observacionesAstillas = data.observaciones;
 
             // Check if we're editing
             const editingId = e.target.dataset.editingId;
@@ -356,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.updateFolderLists();
             ui.toggleModal('astillas-form-container', false);
             e.target.reset();
-            const preview = document.getElementById('astilla-foto-preview');
+            const preview = document.getElementById('astilla-fotos-preview');
             if (preview) preview.innerHTML = '';
             // Clear GPS status
             document.getElementById('astilla-gps-status').textContent = '';
@@ -364,14 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Image Previews ---
-    const hallazgoFotoInput = document.getElementById('hallazgo-foto');
-    if (hallazgoFotoInput) {
-        hallazgoFotoInput.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'hallazgo-foto-preview'));
+    const hallazgoFotosInput = document.getElementById('hallazgo-fotos');
+    if (hallazgoFotosInput) {
+        hallazgoFotosInput.addEventListener('change', (e) => ui.handleImagesPreview(e.target, 'hallazgo-fotos-preview'));
     }
 
-    const astillaFotoInput = document.getElementById('astilla-foto');
+    const astillaFotoInput = document.getElementById('astilla-fotos');
     if (astillaFotoInput) {
-        astillaFotoInput.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'astilla-foto-preview'));
+        astillaFotoInput.addEventListener('change', (e) => ui.handleImagesPreview(e.target, 'astilla-fotos-preview'));
     }
 
     // --- GPS Helper ---
@@ -400,26 +405,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // --- KML Upload ---
+    // --- KML/KMZ Upload ---
     const kmlUpload = document.getElementById('kml-upload');
     if (kmlUpload) {
-        kmlUpload.addEventListener('change', (e) => {
+        kmlUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
+            try {
+                const { content, meta } = await readKmlOrKmz(file);
                 const result = mapManager.parseAndShowKML(content, true);
 
                 if (result.success) {
-                    store.addRoute({ name: file.name, content: content });
+                    store.addRoute({ name: file.name, content, kmzMeta: meta });
                     alert(`Éxito: ${result.message}`);
                 } else {
-                    alert(`Error: ${result.message}\nAsegúrate de que sea un archivo KML válido (no KMZ comprimido).`);
+                    alert(`Error: ${result.message}`);
                 }
-            };
-            reader.readAsText(file);
+            } catch (err) {
+                alert(`Error al leer el archivo: ${err.message}`);
+                console.error(err);
+            }
         });
     }
 
@@ -430,6 +436,28 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
     });
+
+    const filesToBase64Array = async (fileList, max = 10) => {
+        const files = Array.from(fileList).slice(0, max);
+        const results = [];
+        for (const f of files) {
+            results.push(await toBase64(f));
+        }
+        return results;
+    };
+
+    const readKmlOrKmz = async (file) => {
+        const isKmz = file.name.toLowerCase().endsWith('.kmz');
+        if (!isKmz) {
+            return { content: await file.text(), meta: { type: 'kml' } };
+        }
+        if (!window.JSZip) throw new Error('JSZip no disponible para KMZ.');
+        const zip = await JSZip.loadAsync(file);
+        const kmlEntry = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'));
+        if (!kmlEntry) throw new Error('El KMZ no contiene un KML.');
+        const kmlContent = await kmlEntry.async('string');
+        return { content: kmlContent, meta: { type: 'kmz', files: Object.keys(zip.files) } };
+    };
 
 
     // --- Role Selector ---
@@ -638,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PWA Registration ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js', { scope: '/Paleo-tracker/' })
+            navigator.serviceWorker.register('./service-worker.js', { scope: '/Paleo-Heritage/' })
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 }, err => {

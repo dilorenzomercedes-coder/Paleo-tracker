@@ -18,6 +18,9 @@ class MapManager {
         this.userMarker = null;
         this.userPath = null;
         this.pathCoords = [];
+        this.currentTrackId = null;
+        this.lastPersistTs = 0;
+        this.persistEveryMs = 5000;
     }
 
     init(elementId) {
@@ -223,6 +226,7 @@ class MapManager {
 
             this.isTracking = true;
             this.pathCoords = []; // Reset path on new start? Or keep? Let's reset for this session.
+            this._startTrackSession();
 
             // Create marker and path if not exist
             if (!this.userMarker) {
@@ -265,6 +269,7 @@ class MapManager {
                 navigator.geolocation.clearWatch(this.watchId);
                 this.watchId = null;
             }
+            this._finishTrackSession();
             // Optional: Remove marker/path when stopping? 
             // Or keep them to show where you walked? Let's keep them.
         }
@@ -297,6 +302,7 @@ class MapManager {
             if (this.userPath) {
                 this.userPath.setLatLngs(this.pathCoords);
             }
+            this._persistTrackPoint(lat, lng);
         }
     }
 
@@ -359,5 +365,32 @@ class MapManager {
             this.userPath.setLatLngs([]);
         }
         this.isRecordingPath = false;
+    }
+
+    _startTrackSession() {
+        if (!this.store) return;
+        const active = this.store.getActiveTrack();
+        if (active && active.active) {
+            this.currentTrackId = active.id;
+            this.pathCoords = active.points.map(p => [p.lat, p.lng]);
+            return;
+        }
+        const track = this.store.startTrackSession();
+        this.currentTrackId = track.id;
+        this.lastPersistTs = 0;
+    }
+
+    _persistTrackPoint(lat, lng) {
+        if (!this.store || !this.currentTrackId) return;
+        const now = Date.now();
+        if (now - this.lastPersistTs < this.persistEveryMs) return;
+        this.lastPersistTs = now;
+        this.store.appendTrackPoint(this.currentTrackId, { lat, lng, ts: new Date().toISOString() });
+    }
+
+    _finishTrackSession() {
+        if (!this.store || !this.currentTrackId) return;
+        this.store.finishTrackSession(this.currentTrackId, { points: this.pathCoords.length });
+        this.currentTrackId = null;
     }
 }

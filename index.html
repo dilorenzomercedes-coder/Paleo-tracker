@@ -47,6 +47,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
+  <!-- Data/ZIP helpers -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@4.2.1/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
   <!-- App CSS -->
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -136,11 +140,11 @@
                 <input type="text" name="formacion">
               </div>
               <div class="form-group">
-                <label>Coordinador</label>
+                <label>Coordinadores</label>
                 <input type="text" value="Porfiri-Dos Santos" readonly class="readonly-input">
               </div>
               <div class="form-group">
-                <label>Colector</label>
+                <label>Colector/a</label>
                 <input type="text" name="colector">
               </div>
               <div class="form-group">
@@ -166,14 +170,15 @@
                 <input type="text" name="taxonomia">
               </div>
               <div class="form-group">
-                <label>Foto</label>
+                <label>Fotos (múltiples)</label>
                 <div class="file-upload-wrapper">
-                  <input type="file" name="foto" accept="image/*" capture="environment" id="hallazgo-foto">
-                  <label for="hallazgo-foto" class="file-upload-label">
-                    <span class="icon">📷</span> Tomar/Subir Foto
+                  <input type="file" name="fotos" accept="image/*" capture="environment" id="hallazgo-fotos" multiple>
+                  <label for="hallazgo-fotos" class="file-upload-label">
+                    <span class="icon">📷</span> Agregar fotos
                   </label>
                 </div>
-                <div id="hallazgo-foto-preview" class="image-preview"></div>
+                <small style="color: var(--text-muted);">Puedes subir varias; se optimizan y se guardan offline.</small>
+                <div id="hallazgo-fotos-preview" class="image-preview-grid"></div>
               </div>
               <div class="form-group">
                 <label>Ubicación (GPS)</label>
@@ -232,14 +237,14 @@
                 <input type="text" name="folder" list="folder-list">
               </div>
               <div class="form-group">
-                <label>Foto</label>
+                <label>Fotos (múltiples)</label>
                 <div class="file-upload-wrapper">
-                  <input type="file" name="foto" accept="image/*" capture="environment" id="astilla-foto">
-                  <label for="astilla-foto" class="file-upload-label">
-                    <span class="icon">📷</span> Tomar/Subir Foto
+                  <input type="file" name="fotos" accept="image/*" capture="environment" id="astilla-fotos" multiple>
+                  <label for="astilla-fotos" class="file-upload-label">
+                    <span class="icon">📷</span> Tomar/Subir Fotos
                   </label>
                 </div>
-                <div id="astilla-foto-preview" class="image-preview"></div>
+                <div id="astilla-fotos-preview" class="image-preview-grid"></div>
               </div>
               <div class="form-group">
                 <label>Ubicación (GPS)</label>
@@ -259,6 +264,10 @@
                   </div>
                 </div>
               </div>
+              <div class="form-group">
+                <label>Observaciones</label>
+                <textarea name="observacionesAstillas" rows="3" placeholder="Notas adicionales (opcional)"></textarea>
+              </div>
               <div class="form-actions">
                 <button type="submit" class="btn-primary full-width">Guardar Astilla</button>
               </div>
@@ -272,8 +281,8 @@
         <div class="section-header">
           <h2>Caminos y Rutas</h2>
           <div class="actions">
-            <label for="kml-upload" class="btn-secondary">📂 Cargar KML</label>
-            <input type="file" id="kml-upload" accept=".kml" hidden>
+            <label for="kml-upload" class="btn-secondary">📂 Cargar KML/KMZ</label>
+            <input type="file" id="kml-upload" accept=".kml,.kmz" hidden>
           </div>
         </div>
 
@@ -283,22 +292,21 @@
             <h4>Filtros de Visualización</h4>
             <button id="toggle-filters" class="btn-icon" aria-label="Toggle filters">▼</button>
           </div>
-          <div class="tracking-control" style="padding: 10px; border-bottom: 1px solid #eee;">
-            <button id="btn-toggle-tracking" class="btn-secondary full-width"
-              style="display:flex; align-items:center; justify-content:center; gap:5px;">
+          <div class="tracking-control modern-card">
+            <button id="btn-toggle-tracking" class="btn-secondary full-width tracking-btn">
               <span>◎</span> Iniciar Seguimiento
             </button>
-            <label class="checkbox-label" style="margin-top: 8px; font-size: 0.9em; justify-content: center;">
+            <label class="checkbox-label record-toggle">
               <input type="checkbox" id="chk-record-path">
               Grabar recorrido (dibujar línea)
             </label>
             <div id="path-info"
-              style="display: none; margin-top: 8px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 0.85em;">
+              style="display: none; margin-top: 8px; padding: 8px; border-radius: 12px; font-size: 0.9em;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                 <span>📍 Puntos: <strong id="path-points-count">0</strong></span>
                 <span>📏 Distancia: <strong id="path-distance">0 m</strong></span>
               </div>
-              <button id="btn-save-path" class="btn-primary full-width" style="margin-top: 4px; padding: 6px;">
+              <button id="btn-save-path" class="btn-primary full-width btn-save-modern">
                 💾 Guardar Recorrido
               </button>
             </div>

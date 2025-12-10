@@ -50,6 +50,24 @@ class UI {
 
         if (type === 'hallazgo') {
             title.textContent = `Hallazgo: ${item.codigo || 'S/N'}`;
+
+            // Generate photos HTML (supports fotos[], foto1-3, foto)
+            let photosHtml = '';
+            const photos = [];
+            if (Array.isArray(item.fotos) && item.fotos.length) photos.push(...item.fotos);
+            if (item.foto1) photos.push(item.foto1);
+            if (item.foto2) photos.push(item.foto2);
+            if (item.foto3) photos.push(item.foto3);
+            if (item.foto && photos.length === 0) photos.push(item.foto); // legacy single
+
+            if (photos.length > 0) {
+                photosHtml = '<div class="detail-row"><div class="detail-label">Fotografías</div><div class="photos-grid">';
+                photos.forEach(photo => {
+                    photosHtml += `<img src="${photo}" class="detail-photo" alt="Foto del hallazgo">`;
+                });
+                photosHtml += '</div></div>';
+            }
+
             content.innerHTML = `
                 <div class="detail-row">
                     <div class="detail-label">Fecha</div>
@@ -76,11 +94,11 @@ class UI {
                     <div class="detail-value">${item.formacion || '-'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Coordinador</div>
+                    <div class="detail-label">Coordinadores</div>
                     <div class="detail-value">Porfiri-Dos Santos</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Colector</div>
+                    <div class="detail-label">Colector/a</div>
                     <div class="detail-value">${item.colector || '-'}</div>
                 </div>
                 <div class="detail-row">
@@ -99,15 +117,19 @@ class UI {
                     <div class="detail-label">Coordenadas GPS</div>
                     <div class="detail-value">${item.lat && item.lng ? `${item.lat}, ${item.lng}` : 'No disponible'}</div>
                 </div>
-                ${item.foto ? `
-                <div class="detail-row">
-                    <div class="detail-label">Fotografía</div>
-                    <img src="${item.foto}" class="detail-photo" alt="Foto del hallazgo">
-                </div>
-                ` : ''}
+                ${photosHtml}
             `;
         } else if (type === 'astilla') {
             title.textContent = `Astilla - ${item.localidad}`;
+            const fotosAstilla = Array.isArray(item.fotos) ? item.fotos : (item.foto ? [item.foto] : []);
+            let fotosHtml = '';
+            if (fotosAstilla.length > 0) {
+                fotosHtml = '<div class="detail-row"><div class="detail-label">Fotografías</div><div class="photos-grid">';
+                fotosAstilla.forEach(photo => {
+                    fotosHtml += `<img src="${photo}" class="detail-photo" alt="Foto de la astilla">`;
+                });
+                fotosHtml += '</div></div>';
+            }
             content.innerHTML = `
                 <div class="detail-row">
                     <div class="detail-label">Fecha</div>
@@ -125,12 +147,11 @@ class UI {
                     <div class="detail-label">Coordenadas GPS</div>
                     <div class="detail-value">${item.lat && item.lng ? `${item.lat}, ${item.lng}` : 'No disponible'}</div>
                 </div>
-                ${item.foto ? `
                 <div class="detail-row">
-                    <div class="detail-label">Fotografía</div>
-                    <img src="${item.foto}" class="detail-photo" alt="Foto de la astilla">
+                    <div class="detail-label">Observaciones</div>
+                    <div class="detail-value">${item.observacionesAstillas || item.observaciones || '-'}</div>
                 </div>
-                ` : ''}
+                ${fotosHtml}
             `;
         }
 
@@ -192,12 +213,17 @@ class UI {
         });
 
         // Show photo preview if exists
-        if (data.foto) {
-            const previewId = formId === 'form-hallazgo' ? 'hallazgo-foto-preview' : 'astilla-foto-preview';
-            const preview = document.getElementById(previewId);
-            if (preview) {
-                preview.innerHTML = `<img src="${data.foto}" alt="Preview">`;
-            }
+        const previewId = formId === 'form-hallazgo' ? 'hallazgo-fotos-preview' : 'astilla-fotos-preview';
+        const preview = document.getElementById(previewId);
+        if (preview) {
+            const fotos = Array.isArray(data.fotos) && data.fotos.length > 0 ? data.fotos : (data.foto ? [data.foto] : []);
+            preview.innerHTML = '';
+            fotos.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = 'Preview';
+                preview.appendChild(img);
+            });
         }
     }
 
@@ -265,8 +291,9 @@ class UI {
         card.className = 'data-card';
         card.style.cursor = 'pointer';
 
-        const imgDisplay = item.foto
-            ? `<img src="${item.foto}" alt="Foto">`
+        const firstFoto = Array.isArray(item.fotos) && item.fotos.length > 0 ? item.fotos[0] : item.foto;
+        const imgDisplay = firstFoto
+            ? `<img src="${firstFoto}" alt="Foto">`
             : `<div class="img-placeholder"><span>📷</span></div>`;
 
         const title = type === 'hallazgo' ? `${item.codigo || 'S/N'} - ${item.tipo_material}` : `Astilla - ${item.localidad}`;
@@ -374,15 +401,21 @@ class UI {
         }
     }
 
-    handleImagePreview(input, previewElementId) {
-        if (input.files && input.files[0]) {
+    handleImagesPreview(input, previewElementId) {
+        if (!input.files || input.files.length === 0) return;
+        const preview = document.getElementById(previewElementId);
+        if (!preview) return;
+        preview.innerHTML = '';
+        Array.from(input.files).forEach(file => {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const preview = document.getElementById(previewElementId);
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = 'Preview';
+                preview.appendChild(img);
             };
-            reader.readAsDataURL(input.files[0]);
-        }
+            reader.readAsDataURL(file);
+        });
     }
 
     setRole(role) {

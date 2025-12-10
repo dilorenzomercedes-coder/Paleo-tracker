@@ -36,13 +36,14 @@ class Exporter {
     // Process Hallazgos
     hallazgos.forEach(h => {
       if (h.lat && h.lng) {
+        const firstPhoto = (Array.isArray(h.fotos) && h.fotos.length > 0) ? h.fotos[0] : h.foto;
         const desc = `
                     <b>Código:</b> ${h.codigo || ''}<br>
                     <b>Material:</b> ${h.tipo_material}<br>
                     <b>Taxonomía:</b> ${h.taxonomia || ''}<br>
                     <b>Fecha:</b> ${h.fecha}<br>
-                    <b>Colector:</b> ${h.colector}<br>
-                    ${h.foto ? `<br><img src="${h.foto}" width="300" /><br>` : ''}
+                    <b>Colector/a:</b> ${h.colector}<br>
+                    ${firstPhoto ? `<br><img src="${firstPhoto}" width="300" /><br>` : ''}
                 `;
         const placemark = `
       <Placemark>
@@ -60,10 +61,11 @@ class Exporter {
     // Process Astillas
     astillas.forEach(a => {
       if (a.lat && a.lng) {
+        const firstPhoto = (Array.isArray(a.fotos) && a.fotos.length > 0) ? a.fotos[0] : a.foto;
         const desc = `
                     <b>Fecha:</b> ${a.fecha}<br>
                     <b>Localidad:</b> ${a.localidad}<br>
-                    ${a.foto ? `<br><img src="${a.foto}" width="300" /><br>` : ''}
+                    ${firstPhoto ? `<br><img src="${firstPhoto}" width="300" /><br>` : ''}
                 `;
         const placemark = `
       <Placemark>
