@@ -465,26 +465,74 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // --- KML Upload ---
+    // --- KML/KMZ Upload ---
     const kmlUpload = document.getElementById('kml-upload');
     if (kmlUpload) {
-        kmlUpload.addEventListener('change', (e) => {
+        kmlUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                const result = mapManager.parseAndShowKML(content, true);
+            const fileName = file.name.toLowerCase();
+            const isKMZ = fileName.endsWith('.kmz');
+
+            try {
+                let kmlContent;
+
+                if (isKMZ) {
+                    // KMZ is a ZIP file containing doc.kml
+                    if (typeof JSZip === 'undefined') {
+                        alert('Error: La librería JSZip no está disponible. No se puede abrir archivos KMZ.');
+                        return;
+                    }
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const zip = await JSZip.loadAsync(arrayBuffer);
+
+                    // Look for KML file inside the ZIP (usually doc.kml)
+                    let kmlFile = zip.file('doc.kml');
+
+                    // If not found, look for any .kml file
+                    if (!kmlFile) {
+                        const kmlFiles = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.kml'));
+                        if (kmlFiles.length > 0) {
+                            kmlFile = zip.file(kmlFiles[0]);
+                        }
+                    }
+
+                    if (!kmlFile) {
+                        alert('Error: No se encontró archivo KML dentro del archivo KMZ.');
+                        return;
+                    }
+
+                    kmlContent = await kmlFile.async('string');
+                } else {
+                    // Regular KML file
+                    kmlContent = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (e) => reject(e);
+                        reader.readAsText(file);
+                    });
+                }
+
+                // Parse and show the KML
+                const result = mapManager.parseAndShowKML(kmlContent, true);
 
                 if (result.success) {
-                    store.addRoute({ name: file.name, content: content });
-                    alert(`Éxito: ${result.message}`);
+                    store.addRoute({ name: file.name, content: kmlContent });
+                    ui.renderRoutesList();
+                    alert(`✅ ${result.message}`);
                 } else {
-                    alert(`Error: ${result.message}\nAsegúrate de que sea un archivo KML válido (no KMZ comprimido).`);
+                    alert(`❌ ${result.message}`);
                 }
-            };
-            reader.readAsText(file);
+
+            } catch (error) {
+                console.error('Error processing KML/KMZ:', error);
+                alert(`Error al procesar el archivo: ${error.message}`);
+            }
+
+            // Reset input so same file can be selected again
+            e.target.value = '';
         });
     }
 

@@ -72,6 +72,19 @@ class MapManager {
                 }
 
                 if (h.lat && h.lng) {
+                    // Build popup content with photo
+                    let popupContent = `<div class="marker-popup">`;
+                    popupContent += `<b>${h.codigo || 'Hallazgo'}</b><br>`;
+                    popupContent += `<span class="popup-detail">${h.tipo_material || ''}</span>`;
+                    if (h.folder) popupContent += `<br><span class="popup-folder">📁 ${h.folder}</span>`;
+                    if (h.localidad) popupContent += `<br><span class="popup-location">📍 ${h.localidad}</span>`;
+
+                    // Add photo if exists
+                    if (h.foto1) {
+                        popupContent += `<div class="popup-photo"><img src="${h.foto1}" alt="Foto del hallazgo"></div>`;
+                    }
+                    popupContent += `</div>`;
+
                     L.marker([h.lat, h.lng], {
                         icon: L.divIcon({
                             className: 'custom-pin',
@@ -80,7 +93,7 @@ class MapManager {
                             iconAnchor: [12, 24]
                         })
                     })
-                        .bindPopup(`<b>${h.codigo || 'Hallazgo'}</b><br>${h.tipo_material}<br>${h.folder || ''}`)
+                        .bindPopup(popupContent, { maxWidth: 200 })
                         .addTo(this.markersLayer);
                 }
             });
@@ -96,6 +109,19 @@ class MapManager {
                 }
 
                 if (a.lat && a.lng) {
+                    // Build popup content with photo
+                    let popupContent = `<div class="marker-popup">`;
+                    popupContent += `<b>🦴 Astilla</b><br>`;
+                    if (a.localidad) popupContent += `<span class="popup-location">📍 ${a.localidad}</span>`;
+                    if (a.folder) popupContent += `<br><span class="popup-folder">📁 ${a.folder}</span>`;
+                    if (a.observaciones) popupContent += `<br><span class="popup-obs">${a.observaciones}</span>`;
+
+                    // Add photo if exists
+                    if (a.foto) {
+                        popupContent += `<div class="popup-photo"><img src="${a.foto}" alt="Foto de astilla"></div>`;
+                    }
+                    popupContent += `</div>`;
+
                     L.marker([a.lat, a.lng], {
                         icon: L.divIcon({
                             className: 'custom-bone',
@@ -104,7 +130,7 @@ class MapManager {
                             iconAnchor: [10, 10]
                         })
                     })
-                        .bindPopup(`<b>Astilla</b><br>${a.localidad}<br>${a.folder || ''}`)
+                        .bindPopup(popupContent, { maxWidth: 200 })
                         .addTo(this.markersLayer);
                 }
             });
@@ -142,7 +168,7 @@ class MapManager {
         });
     }
 
-    // Improved KML Parser
+    // Enhanced KML Parser - Supports Polygon, gx:Track, MultiGeometry
     parseAndShowKML(fileContent, saveToStore = true, color = '#FF5722') {
         if (!this.map) return { success: false, message: "Map not initialized" };
 
@@ -160,10 +186,11 @@ class MapManager {
 
         // Helper to parse coordinate string "lon,lat,alt lon,lat,alt ..."
         const parseCoords = (str) => {
+            if (!str) return [];
             return str.trim().split(/\s+/).map(pair => {
                 const parts = pair.split(',');
                 if (parts.length >= 2) {
-                    // KML is usually Lon,Lat. Leaflet wants Lat,Lon.
+                    // KML is Lon,Lat. Leaflet wants Lat,Lon.
                     const lat = parseFloat(parts[1]);
                     const lng = parseFloat(parts[0]);
                     if (isNaN(lat) || isNaN(lng)) return null;
@@ -173,46 +200,214 @@ class MapManager {
             }).filter(p => p !== null);
         };
 
-        // Strategy 1: Standard LineString/Point search
-        const processElements = (tagName, type) => {
-            const elements = kml.getElementsByTagName(tagName);
+        // Parse gx:coord format (used by Geo Tracker): "lon lat alt" separated by spaces/newlines
+        const parseGxCoords = (trackElement) => {
+            const coords = [];
+            // gx:coord elements contain "lon lat alt"
+            const gxCoords = trackElement.getElementsByTagName('gx:coord');
+            for (let i = 0; i < gxCoords.length; i++) {
+                const parts = gxCoords[i].textContent.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    const lng = parseFloat(parts[0]);
+                    const lat = parseFloat(parts[1]);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        coords.push([lat, lng]);
+                    }
+                }
+            }
+            return coords;
+        };
+
+        // Get name from placemark
+        const getPlacemarkName = (element) => {
+            // Walk up to find parent Placemark
+            let current = element;
+            while (current && current.tagName !== 'Placemark') {
+                current = current.parentElement;
+            }
+            if (current) {
+                const nameEl = current.getElementsByTagName('name')[0];
+                if (nameEl) return nameEl.textContent;
+            }
+            return null;
+        };
+
+        // Process LineString elements
+        const processLineStrings = () => {
+            const elements = kml.getElementsByTagName('LineString');
             for (let i = 0; i < elements.length; i++) {
                 const coordsNode = elements[i].getElementsByTagName('coordinates')[0];
                 if (coordsNode) {
                     const points = parseCoords(coordsNode.textContent);
-                    if (points.length > 0) {
-                        if (type === 'line') {
-                            const poly = L.polyline(points, { color: color, weight: 5 }).addTo(this.routesLayer);
-                            bounds.extend(poly.getBounds());
-                        } else if (type === 'point') {
-                            // Only add points if they are part of the route file, maybe distinct style?
-                            // For now, let's treat them as route markers
-                            L.circleMarker(points[0], { radius: 5, color: 'blue' }).addTo(this.routesLayer);
-                            bounds.extend(L.latLngBounds(points));
+                    if (points.length > 1) {
+                        const name = getPlacemarkName(elements[i]);
+                        const line = L.polyline(points, {
+                            color: color,
+                            weight: 4,
+                            opacity: 0.8
+                        }).addTo(this.routesLayer);
+
+                        if (name) {
+                            line.bindPopup(`<b>${name}</b>`);
                         }
+                        bounds.extend(line.getBounds());
                         foundCount++;
                     }
                 }
             }
         };
 
-        processElements('LineString', 'line');
-        processElements('Point', 'point');
+        // Process Polygon elements
+        const processPolygons = () => {
+            const elements = kml.getElementsByTagName('Polygon');
+            for (let i = 0; i < elements.length; i++) {
+                // Outer boundary
+                const outerBoundary = elements[i].getElementsByTagName('outerBoundaryIs')[0];
+                if (outerBoundary) {
+                    const coordsNode = outerBoundary.getElementsByTagName('coordinates')[0];
+                    if (coordsNode) {
+                        const points = parseCoords(coordsNode.textContent);
+                        if (points.length > 2) {
+                            const name = getPlacemarkName(elements[i]);
+                            const polygon = L.polygon(points, {
+                                color: color,
+                                weight: 2,
+                                fillColor: color,
+                                fillOpacity: 0.2
+                            }).addTo(this.routesLayer);
 
-        // Strategy 2: Universal Fallback (if nothing found yet)
-        // Search for ANY <coordinates> tag if we haven't found standard geometries
+                            if (name) {
+                                polygon.bindPopup(`<b>${name}</b>`);
+                            }
+                            bounds.extend(polygon.getBounds());
+                            foundCount++;
+                        }
+                    }
+                }
+            }
+        };
+
+        // Process LinearRing (standalone, not inside Polygon)
+        const processLinearRings = () => {
+            const elements = kml.getElementsByTagName('LinearRing');
+            for (let i = 0; i < elements.length; i++) {
+                // Skip if inside a Polygon (already processed)
+                if (elements[i].parentElement?.tagName === 'outerBoundaryIs' ||
+                    elements[i].parentElement?.tagName === 'innerBoundaryIs') {
+                    continue;
+                }
+
+                const coordsNode = elements[i].getElementsByTagName('coordinates')[0];
+                if (coordsNode) {
+                    const points = parseCoords(coordsNode.textContent);
+                    if (points.length > 2) {
+                        const name = getPlacemarkName(elements[i]);
+                        const ring = L.polygon(points, {
+                            color: color,
+                            weight: 2,
+                            fillColor: color,
+                            fillOpacity: 0.2
+                        }).addTo(this.routesLayer);
+
+                        if (name) {
+                            ring.bindPopup(`<b>${name}</b>`);
+                        }
+                        bounds.extend(ring.getBounds());
+                        foundCount++;
+                    }
+                }
+            }
+        };
+
+        // Process gx:Track elements (Geo Tracker format)
+        const processGxTracks = () => {
+            const tracks = kml.getElementsByTagName('gx:Track');
+            for (let i = 0; i < tracks.length; i++) {
+                const points = parseGxCoords(tracks[i]);
+                if (points.length > 1) {
+                    const name = getPlacemarkName(tracks[i]);
+                    const track = L.polyline(points, {
+                        color: color,
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(this.routesLayer);
+
+                    if (name) {
+                        track.bindPopup(`<b>${name}</b>`);
+                    }
+                    bounds.extend(track.getBounds());
+                    foundCount++;
+                }
+            }
+
+            // Also try gx:MultiTrack
+            const multiTracks = kml.getElementsByTagName('gx:MultiTrack');
+            for (let i = 0; i < multiTracks.length; i++) {
+                const innerTracks = multiTracks[i].getElementsByTagName('gx:Track');
+                for (let j = 0; j < innerTracks.length; j++) {
+                    const points = parseGxCoords(innerTracks[j]);
+                    if (points.length > 1) {
+                        const name = getPlacemarkName(multiTracks[i]);
+                        const track = L.polyline(points, {
+                            color: color,
+                            weight: 4,
+                            opacity: 0.8
+                        }).addTo(this.routesLayer);
+
+                        if (name) {
+                            track.bindPopup(`<b>${name}</b>`);
+                        }
+                        bounds.extend(track.getBounds());
+                        foundCount++;
+                    }
+                }
+            }
+        };
+
+        // Process Point elements
+        const processPoints = () => {
+            const elements = kml.getElementsByTagName('Point');
+            for (let i = 0; i < elements.length; i++) {
+                const coordsNode = elements[i].getElementsByTagName('coordinates')[0];
+                if (coordsNode) {
+                    const points = parseCoords(coordsNode.textContent);
+                    if (points.length > 0) {
+                        const name = getPlacemarkName(elements[i]);
+                        const marker = L.circleMarker(points[0], {
+                            radius: 6,
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.6
+                        }).addTo(this.routesLayer);
+
+                        if (name) {
+                            marker.bindPopup(`<b>${name}</b>`);
+                        }
+                        bounds.extend(L.latLngBounds(points));
+                        foundCount++;
+                    }
+                }
+            }
+        };
+
+        // Execute all parsers
+        processLineStrings();
+        processPolygons();
+        processLinearRings();
+        processGxTracks();
+        processPoints();
+
+        // Fallback: Search for any <coordinates> not yet processed
         if (foundCount === 0) {
             const allCoords = kml.getElementsByTagName('coordinates');
             for (let i = 0; i < allCoords.length; i++) {
                 const points = parseCoords(allCoords[i].textContent);
                 if (points.length > 1) {
-                    // Assume path
-                    const poly = L.polyline(points, { color: color, weight: 5 }).addTo(this.routesLayer);
+                    const poly = L.polyline(points, { color: color, weight: 4 }).addTo(this.routesLayer);
                     bounds.extend(poly.getBounds());
                     foundCount++;
                 } else if (points.length === 1) {
-                    // Assume point
-                    L.circleMarker(points[0], { radius: 5, color: 'blue' }).addTo(this.routesLayer);
+                    L.circleMarker(points[0], { radius: 6, color: color }).addTo(this.routesLayer);
                     bounds.extend(L.latLngBounds(points));
                     foundCount++;
                 }
@@ -223,7 +418,7 @@ class MapManager {
             this.map.fitBounds(bounds);
             return { success: true, message: `Se cargaron ${foundCount} elementos.` };
         } else {
-            return { success: false, message: "No se encontraron coordenadas válidas (LineString o Point) en el archivo." };
+            return { success: false, message: "No se encontraron coordenadas válidas en el archivo KML." };
         }
     }
     // --- Real-time Location Tracking (Enhanced) ---

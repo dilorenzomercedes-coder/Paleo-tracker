@@ -912,3 +912,65 @@ textarea {
 :root {
     --success: #00C853;
 }
+
+/* Map Marker Popups with Photos */
+.marker-popup {
+    font-family: var(--font-family);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    max-width: 180px;
+}
+
+.marker-popup b {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.popup-detail {
+    color: var(--text-main);
+}
+
+.popup-folder {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.popup-location {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.popup-obs {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.popup-photo {
+    margin-top: 8px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.popup-photo img {
+    width: 100%;
+    max-width: 160px;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-popup-content {
+    margin: 10px 12px !important;
+}
+
+.leaflet-popup-tip {
+    box-shadow: var(--shadow-sm) !important;
+}
