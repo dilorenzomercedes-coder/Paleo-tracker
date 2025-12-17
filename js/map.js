@@ -711,23 +711,48 @@ class MapManager {
         if (!this.map) return;
         const latLng = [lat, lng];
 
-        // Update Marker
+        // Stabilization filter for marker - avoid jittery movement from GPS noise
+        const MARKER_MIN_MOVEMENT = 2; // meters - only move marker if moved more than this
+
+        // Update Marker with stabilization
         if (this.userMarker) {
-            this.userMarker.setLatLng(latLng);
-            // Auto-pan only if user is near edge of view
-            const mapBounds = this.map.getBounds();
-            const padding = 0.2; // 20% padding
-            const latPad = (mapBounds.getNorth() - mapBounds.getSouth()) * padding;
-            const lngPad = (mapBounds.getEast() - mapBounds.getWest()) * padding;
+            const currentMarkerPos = this.userMarker.getLatLng();
 
-            const innerBounds = L.latLngBounds(
-                [mapBounds.getSouth() + latPad, mapBounds.getWest() + lngPad],
-                [mapBounds.getNorth() - latPad, mapBounds.getEast() - lngPad]
-            );
+            // Only update marker if it's the first reading or moved significantly
+            if (currentMarkerPos.lat === 0 && currentMarkerPos.lng === 0) {
+                // First reading - update immediately
+                this.userMarker.setLatLng(latLng);
+                this.map.setView(latLng, 16); // Center on first location
+            } else {
+                // Calculate distance from current marker position
+                const distance = currentMarkerPos.distanceTo(L.latLng(latLng));
 
-            if (!innerBounds.contains(latLng)) {
-                this.map.panTo(latLng);
+                // Only move marker if significant movement detected
+                if (distance >= MARKER_MIN_MOVEMENT) {
+                    this.userMarker.setLatLng(latLng);
+
+                    // Auto-pan only if user is near edge of view
+                    const mapBounds = this.map.getBounds();
+                    const padding = 0.2; // 20% padding
+                    const latPad = (mapBounds.getNorth() - mapBounds.getSouth()) * padding;
+                    const lngPad = (mapBounds.getEast() - mapBounds.getWest()) * padding;
+
+                    const innerBounds = L.latLngBounds(
+                        [mapBounds.getSouth() + latPad, mapBounds.getWest() + lngPad],
+                        [mapBounds.getNorth() - latPad, mapBounds.getEast() - lngPad]
+                    );
+
+                    if (!innerBounds.contains(latLng)) {
+                        this.map.panTo(latLng);
+                    }
+                }
             }
+        }
+
+        // Update accuracy circle (this can update more frequently)
+        if (this.accuracyCircle) {
+            this.accuracyCircle.setLatLng(latLng);
+            this.accuracyCircle.setRadius(accuracy);
         }
 
         // Update Path - Only if recording AND accuracy is acceptable
