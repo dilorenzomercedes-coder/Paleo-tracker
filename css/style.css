@@ -974,3 +974,147 @@ textarea {
 .leaflet-popup-tip {
     box-shadow: var(--shadow-sm) !important;
 }
+
+/* ======================================
+   MOBILE RESPONSIVE FIXES
+   ====================================== */
+
+/* Support for notch and safe areas on iOS/Android */
+@supports(padding: max(0px)) {
+    .app-header {
+        padding-top: max(0px, env(safe-area-inset-top));
+        height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    }
+
+    .app-content {
+        padding-bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .bottom-nav {
+        height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* Mobile-specific adjustments */
+@media screen and (max-width: 600px) {
+    :root {
+        --header-height: 56px;
+        --nav-height: 60px;
+    }
+
+    .app-header {
+        padding: 0 12px;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .app-header h1 {
+        font-size: 1rem;
+    }
+
+    .app-logo {
+        height: 28px;
+    }
+
+    .logo {
+        gap: 8px;
+    }
+
+    /* User controls - stack vertically on very small screens */
+    .user-controls {
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .user-controls button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .role-select {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    /* Section header - prevent overlap */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .section-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .section-header .actions,
+    .section-header .btn-secondary,
+    .section-header .btn-primary {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    /* Content padding */
+    .app-content {
+        padding: 16px;
+        padding-bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Map view - smaller on mobile */
+    .map-view {
+        height: 45vh;
+    }
+
+    /* Map filters panel - more compact */
+    .map-filters-panel {
+        padding: 12px;
+    }
+
+    /* Bottom nav - ensure visibility */
+    .bottom-nav {
+        left: 0;
+        right: 0;
+        max-width: none;
+    }
+
+    .nav-item .icon {
+        font-size: 1.2rem;
+    }
+
+    .nav-item .label {
+        font-size: 0.65rem;
+    }
+}
+
+/* Very small screens (iPhone SE, etc) */
+@media screen and (max-width: 375px) {
+    .app-header h1 {
+        font-size: 0.9rem;
+    }
+
+    .user-controls button {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .map-view {
+        height: 40vh;
+    }
+}
+
+/* PWA Standalone mode - extra padding for status bar */
+@media all and (display-mode: standalone) {
+    .app-header {
+        padding-top: env(safe-area-inset-top, 20px);
+    }
+
+    .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom, 10px);
+    }
+}
