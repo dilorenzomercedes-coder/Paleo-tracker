@@ -12,6 +12,12 @@
   },
   "homepage": "https://dilorenzomercedes-coder.github.io/Paleo-tracker",
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.0.0",
+    "@capacitor/geolocation": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dexie": "^4.2.1",

@@ -9,9 +9,10 @@ class UI {
 
     init() {
         this.renderHallazgos();
-        this.renderAstillas();
+        this.renderFragmentos();
         this.updateFolderLists();
         this.renderRoutesList();
+        this.renderDocumentFolders();
     }
 
     // --- Tabs ---
@@ -26,8 +27,11 @@ class UI {
         this.currentFolder = null;
 
         if (tabId === 'tab-hallazgos') this.renderHallazgos();
-        if (tabId === 'tab-astillas') this.renderAstillas();
+        if (tabId === 'tab-fragmentos') this.renderFragmentos();
+        if (tabId === 'tab-hallazgos') this.renderHallazgos();
+        if (tabId === 'tab-fragmentos') this.renderFragmentos();
         if (tabId === 'tab-caminos') this.renderRoutesList();
+        if (tabId === 'tab-documentacion') this.renderDocumentFolders();
     }
 
     // --- Modals ---
@@ -119,8 +123,8 @@ class UI {
                 </div>
                 ${photosHtml}
             `;
-        } else if (type === 'astilla') {
-            title.textContent = `Astilla - ${item.localidad}`;
+        } else if (type === 'fragmento') {
+            title.textContent = `Fragmento - ${item.localidad}`;
             content.innerHTML = `
                 <div class="detail-row">
                     <div class="detail-label">Fecha</div>
@@ -145,7 +149,7 @@ class UI {
                 ${item.foto ? `
                 <div class="detail-row">
                     <div class="detail-label">Fotografía</div>
-                    <img src="${item.foto}" class="detail-photo" alt="Foto de la astilla">
+                    <img src="${item.foto}" class="detail-photo" alt="Foto del fragmento">
                 </div>
                 ` : ''}
             `;
@@ -162,9 +166,9 @@ class UI {
         if (this.currentDetailType === 'hallazgo') {
             this.store.deleteHallazgo(this.currentDetailItem.id);
             this.renderHallazgos();
-        } else if (this.currentDetailType === 'astilla') {
-            this.store.deleteAstilla(this.currentDetailItem.id);
-            this.renderAstillas();
+        } else if (this.currentDetailType === 'fragmento') {
+            this.store.deleteFragmento(this.currentDetailItem.id);
+            this.renderFragmentos();
         }
 
         this.toggleModal('detail-modal', false);
@@ -182,9 +186,130 @@ class UI {
         if (this.currentDetailType === 'hallazgo') {
             this.toggleModal('hallazgos-form-container', true);
             this.populateForm('form-hallazgo', this.currentDetailItem);
-        } else if (this.currentDetailType === 'astilla') {
-            this.toggleModal('astillas-form-container', true);
-            this.populateForm('form-astilla', this.currentDetailItem);
+        } else if (this.currentDetailType === 'fragmento') {
+            this.toggleModal('fragmentos-form-container', true);
+            this.populateForm('form-fragmento', this.currentDetailItem);
+        }
+    }
+
+    // --- Documents UI ---
+    renderDocumentFolders() {
+        const docs = this.store.getDocuments();
+        const categories = ['Permisos', 'ATS', 'IPCR', 'Alta Spot'];
+
+        categories.forEach(cat => {
+            const count = docs.filter(d => d.category === cat).length;
+            const countEl = document.getElementById(`count-${cat.toLowerCase().replace(' ', '')}`);
+            if (countEl) countEl.textContent = `${count} archivos`;
+
+            // Bind click to open folder
+            const card = document.querySelector(`.doc-folder-card[data-category="${cat}"]`);
+            if (card) {
+                card.onclick = () => this.renderDocumentList(cat);
+            }
+        });
+
+        // Hide list, show grid
+        document.getElementById('doc-folders-root').classList.remove('hidden');
+        document.getElementById('doc-list-view').classList.add('hidden');
+    }
+
+    renderDocumentList(category) {
+        this.currentDocCategory = category;
+        const docs = this.store.getDocuments().filter(d => d.category === category);
+        const container = document.getElementById('doc-items-container');
+        const title = document.getElementById('current-doc-category-title');
+
+        if (title) title.textContent = category;
+
+        // Hide grid, show list
+        document.getElementById('doc-folders-root').classList.add('hidden');
+        document.getElementById('doc-list-view').classList.remove('hidden');
+
+        // Bind Back Button
+        document.getElementById('btn-back-docs').onclick = () => {
+            document.getElementById('doc-folders-root').classList.remove('hidden');
+            document.getElementById('doc-list-view').classList.add('hidden');
+        };
+
+        // Bind Add Button
+        document.getElementById('btn-add-doc').onclick = () => {
+            this.showAddDocumentModal(category);
+        };
+
+        container.innerHTML = '';
+
+        if (docs.length === 0) {
+            container.innerHTML = '<div class="empty-state">No hay documentos.</div>';
+            return;
+        }
+
+        docs.forEach(doc => {
+            const card = document.createElement('div');
+            card.className = 'data-card';
+
+            let iconHtml = '';
+            if (doc.fileType === 'pdf') {
+                iconHtml = `<div class="doc-icon pdf">📄 PDF</div>`;
+            } else {
+                iconHtml = `<img src="${doc.fileData}" alt="Doc Image">`;
+            }
+
+            card.innerHTML = `
+                ${iconHtml}
+                <div class="data-info">
+                    <h4>${doc.title}</h4>
+                    <small>${new Date(doc.timestamp).toLocaleDateString()}</small>
+                </div>
+                <button class="btn-icon delete-doc" style="margin-left:auto; color:red;">🗑️</button>
+            `;
+
+            // Click on card to open/download
+            card.onclick = (e) => {
+                if (e.target.closest('.delete-doc')) {
+                    if (confirm('¿Eliminar documento?')) {
+                        this.store.deleteDocument(doc.id);
+                        this.renderDocumentList(category);
+                        this.renderDocumentFolders(); // update counts
+                    }
+                    return;
+                }
+                this.openDocument(doc);
+            };
+
+            container.appendChild(card);
+        });
+    }
+
+    showAddDocumentModal(category) {
+        this.toggleModal('doc-form-container', true);
+        document.getElementById('doc-category-input').value = category;
+        document.getElementById('form-doc').reset();
+        document.getElementById('doc-file-preview').innerHTML = '';
+    }
+
+    openDocument(doc) {
+        if (doc.fileType === 'pdf') {
+            // Check native
+            // For web, open base64 pdf in new tab is tricky, usually download
+            const link = document.createElement('a');
+            link.href = doc.fileData;
+            link.download = `${doc.title}.pdf`;
+            link.click();
+        } else {
+            // Show image in a simple modal or same detail modal
+            // Let's reuse detail modal but simplified
+            const content = document.getElementById('detail-content');
+            document.getElementById('detail-title').textContent = doc.title;
+            content.innerHTML = `<img src="${doc.fileData}" style="width:100%; border-radius:8px;">`;
+            // Hide edit/delete actions for now in this reused view or handle them
+            // Quick fix: hide actions for doc view
+            document.querySelector('#detail-modal .form-actions').style.display = 'none';
+            this.toggleModal('detail-modal', true);
+
+            // Restore actions when closed? tricky.
+            // Better: create specific preview or just use lightbox.
+            // For now, reuse detail modal is fine.
         }
     }
 
@@ -210,7 +335,7 @@ class UI {
 
         // Show photo preview if exists
         if (data.foto) {
-            const previewId = formId === 'form-hallazgo' ? 'hallazgo-foto-preview' : 'astilla-foto-preview';
+            const previewId = formId === 'form-hallazgo' ? 'hallazgo-foto-preview' : 'fragmento-foto-preview';
             const preview = document.getElementById(previewId);
             if (preview) {
                 preview.innerHTML = `<img src="${data.foto}" alt="Preview">`;
@@ -286,7 +411,7 @@ class UI {
             ? `<img src="${item.foto}" alt="Foto">`
             : `<div class="img-placeholder"><span>📷</span></div>`;
 
-        const title = type === 'hallazgo' ? `${item.codigo || 'S/N'} - ${item.tipo_material}` : `Astilla - ${item.localidad}`;
+        const title = type === 'hallazgo' ? `${item.codigo || 'S/N'} - ${item.tipo_material}` : `Fragmento - ${item.localidad}`;
         const subtitle = type === 'hallazgo' ? item.taxonomia || 'Sin clasificación' : item.fecha;
 
         card.innerHTML = `
@@ -307,8 +432,8 @@ class UI {
         this._renderList('hallazgos-list', this.store.getHallazgos(), 'hallazgo');
     }
 
-    renderAstillas() {
-        this._renderList('astillas-list', this.store.getAstillas(), 'astilla');
+    renderFragmentos() {
+        this._renderList('fragmentos-list', this.store.getFragmentos(), 'fragmento');
     }
 
     renderRoutesList() {

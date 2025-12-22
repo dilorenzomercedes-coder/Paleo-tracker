@@ -1178,3 +1178,53 @@ textarea {
         padding-bottom: env(safe-area-inset-bottom, 10px);
     }
 }
+
+/* Document Folders */
+.doc-folders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.doc-folder-card {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: 15px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: row;
+    /* Horizontal alignment */
+    align-items: center;
+    /* Vertical center alignment */
+    gap: 10px;
+    /* Space between icon and text */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #eee;
+}
+
+.doc-folder-card:active {
+    transform: scale(0.98);
+}
+
+.doc-folder-card .folder-icon {
+    font-size: 24px;
+}
+
+.doc-folder-card h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.doc-folder-card small {
+    display: none;
+    /* Hide count for cleaner look or move it */
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}

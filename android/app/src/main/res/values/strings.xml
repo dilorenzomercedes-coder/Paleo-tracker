@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PaleoHeritage</string>
+    <string name="title_activity_main">PaleoHeritage</string>
+    <string name="package_name">com.paleoheritage.app</string>
+    <string name="custom_url_scheme">com.paleoheritage.app</string>
+</resources>

@@ -1,7 +1,5 @@
 // window.onerror removed to use the one in index.html
 
-// alert("App JS Loaded!"); // Immediate check
-
 document.addEventListener('DOMContentLoaded', () => {
     const store = new Store();
     const ui = new UI(store);
@@ -13,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultFilters = {
         showRoutes: true,
         showHallazgos: true,
-        showAstillas: true,
+        showHallazgos: true,
+        showFragmentos: true,
         hallazgosFolder: 'all',
-        astillasFolder: 'all'
+        fragmentosFolder: 'all'
     };
 
     const savedFilters = JSON.parse(localStorage.getItem('mapFilters')) || defaultFilters;
@@ -26,16 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Filter UI Controls
     const filterRoutes = document.getElementById('filter-routes');
     const filterHallazgos = document.getElementById('filter-hallazgos');
-    const filterAstillas = document.getElementById('filter-astillas');
+    const filterFragmentos = document.getElementById('filter-fragmentos');
     const filterHallazgosFolder = document.getElementById('filter-hallazgos-folder');
-    const filterAstillasFolder = document.getElementById('filter-astillas-folder');
+    const filterFragmentosFolder = document.getElementById('filter-fragmentos-folder');
     const toggleFiltersBtn = document.getElementById('toggle-filters');
     const filtersContent = document.getElementById('map-filters-content');
 
     // Set initial UI state
     if (filterRoutes) filterRoutes.checked = savedFilters.showRoutes;
     if (filterHallazgos) filterHallazgos.checked = savedFilters.showHallazgos;
-    if (filterAstillas) filterAstillas.checked = savedFilters.showAstillas;
+    if (filterRoutes) filterRoutes.checked = savedFilters.showRoutes;
+    if (filterHallazgos) filterHallazgos.checked = savedFilters.showHallazgos;
+    if (filterFragmentos) filterFragmentos.checked = savedFilters.showFragmentos;
 
     // Populate Folder Dropdowns
     const populateFolderSelect = (select, items, selectedFolder) => {
@@ -58,16 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     populateFolderSelect(filterHallazgosFolder, store.getHallazgos(), savedFilters.hallazgosFolder);
-    populateFolderSelect(filterAstillasFolder, store.getAstillas(), savedFilters.astillasFolder);
+    populateFolderSelect(filterFragmentosFolder, store.getFragmentos(), savedFilters.fragmentosFolder);
 
     // Filter Change Handler
     const handleFilterChange = () => {
         const newFilters = {
             showRoutes: filterRoutes ? filterRoutes.checked : true,
             showHallazgos: filterHallazgos ? filterHallazgos.checked : true,
-            showAstillas: filterAstillas ? filterAstillas.checked : true,
+            showHallazgos: filterHallazgos ? filterHallazgos.checked : true,
+            showFragmentos: filterFragmentos ? filterFragmentos.checked : true,
             hallazgosFolder: filterHallazgosFolder ? filterHallazgosFolder.value : 'all',
-            astillasFolder: filterAstillasFolder ? filterAstillasFolder.value : 'all'
+            fragmentosFolder: filterFragmentosFolder ? filterFragmentosFolder.value : 'all'
         };
 
         mapManager.setFilters(newFilters);
@@ -77,9 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add Listeners
     if (filterRoutes) filterRoutes.addEventListener('change', handleFilterChange);
     if (filterHallazgos) filterHallazgos.addEventListener('change', handleFilterChange);
-    if (filterAstillas) filterAstillas.addEventListener('change', handleFilterChange);
+    if (filterFragmentos) filterFragmentos.addEventListener('change', handleFilterChange);
     if (filterHallazgosFolder) filterHallazgosFolder.addEventListener('change', handleFilterChange);
-    if (filterAstillasFolder) filterAstillasFolder.addEventListener('change', handleFilterChange);
+    if (filterFragmentosFolder) filterFragmentosFolder.addEventListener('change', handleFilterChange);
 
     // Toggle Panel
     if (toggleFiltersBtn && filtersContent) {
@@ -270,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Refresh to ensure filters are applied if data changed
                         // Also update folder lists in case new data was added
                         populateFolderSelect(filterHallazgosFolder, store.getHallazgos(), mapManager.filters.hallazgosFolder);
-                        populateFolderSelect(filterAstillasFolder, store.getAstillas(), mapManager.filters.astillasFolder);
+                        populateFolderSelect(filterFragmentosFolder, store.getFragmentos(), mapManager.filters.fragmentosFolder);
                         mapManager.refreshMapData();
                     }
                 }, 100);
@@ -293,17 +295,17 @@ document.addEventListener('DOMContentLoaded', () => {
         closeHallazgoBtn.addEventListener('click', () => ui.toggleModal('hallazgos-form-container', false));
     }
 
-    const openAstillaBtn = document.getElementById('btn-new-astilla');
-    if (openAstillaBtn) {
-        openAstillaBtn.addEventListener('click', () => {
-            ui.toggleModal('astillas-form-container', true);
-            // captureLocation('astilla-gps-status', 'form-astilla');
+    const openFragmentoBtn = document.getElementById('btn-new-fragmento');
+    if (openFragmentoBtn) {
+        openFragmentoBtn.addEventListener('click', () => {
+            ui.toggleModal('fragmentos-form-container', true);
+            // captureLocation('fragmento-gps-status', 'form-fragmento');
         });
     }
 
-    const closeAstillaBtn = document.getElementById('btn-close-astilla');
-    if (closeAstillaBtn) {
-        closeAstillaBtn.addEventListener('click', () => ui.toggleModal('astillas-form-container', false));
+    const closeFragmentoBtn = document.getElementById('btn-close-fragmento');
+    if (closeFragmentoBtn) {
+        closeFragmentoBtn.addEventListener('click', () => ui.toggleModal('fragmentos-form-container', false));
     }
 
     // Detail Modal
@@ -328,9 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCaptureHallazgo.addEventListener('click', () => captureLocation('hallazgo-gps-status', 'form-hallazgo'));
     }
 
-    const btnCaptureAstilla = document.getElementById('btn-capture-astilla');
-    if (btnCaptureAstilla) {
-        btnCaptureAstilla.addEventListener('click', () => captureLocation('astilla-gps-status', 'form-astilla'));
+    const btnCaptureFragmento = document.getElementById('btn-capture-fragmento');
+    if (btnCaptureFragmento) {
+        btnCaptureFragmento.addEventListener('click', () => captureLocation('fragmento-gps-status', 'form-fragmento'));
     }
 
     // --- Forms ---
@@ -342,20 +344,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            // Handle images as DataURL - support 3 photos
+            // Handle images as DataURL - support 3 photos with compression
             const foto1Input = document.getElementById('hallazgo-foto1');
             if (foto1Input && foto1Input.files[0]) {
-                data.foto1 = await toBase64(foto1Input.files[0]);
+                const base64 = await toBase64(foto1Input.files[0]);
+                data.foto1 = await store.compressImage(base64);
             }
 
             const foto2Input = document.getElementById('hallazgo-foto2');
             if (foto2Input && foto2Input.files[0]) {
-                data.foto2 = await toBase64(foto2Input.files[0]);
+                const base64 = await toBase64(foto2Input.files[0]);
+                data.foto2 = await store.compressImage(base64);
             }
 
             const foto3Input = document.getElementById('hallazgo-foto3');
             if (foto3Input && foto3Input.files[0]) {
-                data.foto3 = await toBase64(foto3Input.files[0]);
+                const base64 = await toBase64(foto3Input.files[0]);
+                data.foto3 = await store.compressImage(base64);
             }
 
             // Check if we're editing
@@ -385,36 +390,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Astilla Submit
-    const formAstilla = document.getElementById('form-astilla');
-    if (formAstilla) {
-        formAstilla.addEventListener('submit', async (e) => {
+    // Fragmento Submit
+    const formFragmento = document.getElementById('form-fragmento');
+    if (formFragmento) {
+        formFragmento.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            const fileInput = document.getElementById('astilla-foto');
+            const fileInput = document.getElementById('fragmento-foto');
             if (fileInput && fileInput.files[0]) {
-                data.foto = await toBase64(fileInput.files[0]);
+                const base64 = await toBase64(fileInput.files[0]);
+                data.foto = await store.compressImage(base64);
             }
 
             // Check if we're editing
             const editingId = e.target.dataset.editingId;
             if (editingId) {
-                store.updateAstilla(editingId, data);
+                store.updateFragmento(editingId, data);
                 delete e.target.dataset.editingId;
             } else {
-                store.addAstilla(data);
+                store.addFragmento(data);
             }
 
-            ui.renderAstillas();
+            ui.renderFragmentos();
             ui.updateFolderLists();
-            ui.toggleModal('astillas-form-container', false);
+            ui.toggleModal('fragmentos-form-container', false);
             e.target.reset();
-            const preview = document.getElementById('astilla-foto-preview');
+            const preview = document.getElementById('fragmento-foto-preview');
             if (preview) preview.innerHTML = '';
             // Clear GPS status
-            document.getElementById('astilla-gps-status').textContent = '';
+            document.getElementById('fragmento-gps-status').textContent = '';
         });
     }
 
@@ -434,9 +440,51 @@ document.addEventListener('DOMContentLoaded', () => {
         hallazgoFoto3Input.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'hallazgo-foto3-preview'));
     }
 
-    const astillaFotoInput = document.getElementById('astilla-foto');
-    if (astillaFotoInput) {
-        astillaFotoInput.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'astilla-foto-preview'));
+    const fragmentoFotoInput = document.getElementById('fragmento-foto');
+    if (fragmentoFotoInput) {
+        fragmentoFotoInput.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'fragmento-foto-preview'));
+    }
+
+    // --- Documents ---
+    const closeDocBtn = document.getElementById('btn-close-doc');
+    if (closeDocBtn) {
+        closeDocBtn.addEventListener('click', () => ui.toggleModal('doc-form-container', false));
+    }
+
+    const docFileInput = document.getElementById('doc-file-input');
+    if (docFileInput) {
+        docFileInput.addEventListener('change', (e) => ui.handleImagePreview(e.target, 'doc-file-preview'));
+    }
+
+    const formDoc = document.getElementById('form-doc');
+    if (formDoc) {
+        formDoc.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Process file
+            const fileInput = document.getElementById('doc-file-input');
+            if (fileInput && fileInput.files[0]) {
+                const processed = await store.processFile(fileInput.files[0]);
+                if (processed) {
+                    data.fileType = processed.type;
+                    data.fileData = processed.data;
+                }
+            } else {
+                alert("Por favor selecciona un archivo.");
+                return;
+            }
+
+            store.addDocument(data);
+
+            // Refresh
+            ui.renderDocumentList(data.category);
+            ui.renderDocumentFolders(); // update counts
+            ui.toggleModal('doc-form-container', false);
+            e.target.reset();
+            document.getElementById('doc-file-preview').innerHTML = '';
+        });
     }
 
     // --- GPS Helper ---
@@ -660,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Filter data based on selected folders
             const filteredData = {
                 hallazgos: allData.hallazgos.filter(h => selectedFolders.includes(h.folder || '')), // Handle null/undefined folder as empty string match if that's how it's stored, or check logic
-                astillas: allData.astillas.filter(a => selectedFolders.includes(a.folder || '')),
+                fragmentos: allData.fragmentos.filter(a => selectedFolders.includes(a.folder || '')),
                 routes: allData.routes // Routes don't have folders yet, export all or add logic? For now export all routes.
             };
 
@@ -720,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Refresh UI
                     ui.renderHallazgos();
-                    ui.renderAstillas();
+                    ui.renderFragmentos();
                     ui.renderRoutesList();
                     ui.updateFolderLists();
                     mapManager.refreshMapData();

@@ -7,9 +7,10 @@ class MapManager {
         this.filters = {
             showRoutes: true,
             showHallazgos: true,
-            showAstillas: true,
+            showHallazgos: true,
+            showFragmentos: true,
             hallazgosFolder: 'all',
-            astillasFolder: 'all'
+            fragmentosFolder: 'all'
         };
         // Tracking State
         this.watchId = null;
@@ -233,26 +234,26 @@ class MapManager {
             });
         }
 
-        // Add Astillas
-        if (this.filters.showAstillas) {
-            const astillas = this.store.getAstillas();
-            astillas.forEach(a => {
+        // Add Fragmentos
+        if (this.filters.showFragmentos) {
+            const fragmentos = this.store.getFragmentos();
+            fragmentos.forEach(a => {
                 // Filter by folder
-                if (this.filters.astillasFolder !== 'all' && a.folder !== this.filters.astillasFolder) {
+                if (this.filters.fragmentosFolder !== 'all' && a.folder !== this.filters.fragmentosFolder) {
                     return;
                 }
 
                 if (a.lat && a.lng) {
                     // Build popup content with photo
                     let popupContent = `<div class="marker-popup">`;
-                    popupContent += `<b>🦴 Astilla</b><br>`;
+                    popupContent += `<b>🦴 Fragmento</b><br>`;
                     if (a.localidad) popupContent += `<span class="popup-location">📍 ${a.localidad}</span>`;
                     if (a.folder) popupContent += `<br><span class="popup-folder">📁 ${a.folder}</span>`;
                     if (a.observaciones) popupContent += `<br><span class="popup-obs">${a.observaciones}</span>`;
 
                     // Add photo if exists
                     if (a.foto) {
-                        popupContent += `<div class="popup-photo"><img src="${a.foto}" alt="Foto de astilla"></div>`;
+                        popupContent += `<div class="popup-photo"><img src="${a.foto}" alt="Foto de fragmento"></div>`;
                     }
                     popupContent += `</div>`;
 

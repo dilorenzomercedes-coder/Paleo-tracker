@@ -1,6 +1,6 @@
 class Exporter {
   static generateKML(data) {
-    const { hallazgos, astillas, routes } = data;
+    const { hallazgos, fragmentos, routes } = data;
 
     let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -11,7 +11,7 @@ class Exporter {
         <Icon><href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href></Icon>
       </IconStyle>
     </Style>
-    <Style id="astillaStyle">
+    <Style id="fragmentoStyle">
       <IconStyle>
         <Icon><href>http://maps.google.com/mapfiles/kml/paddle/blu-circle.png</href></Icon>
       </IconStyle>
@@ -66,8 +66,8 @@ class Exporter {
       }
     });
 
-    // Process Astillas
-    astillas.forEach(a => {
+    // Process Fragmentos
+    fragmentos.forEach(a => {
       if (a.lat && a.lng) {
         const desc = `
                     <b>Fecha:</b> ${a.fecha}<br>
@@ -76,9 +76,9 @@ class Exporter {
                 `;
         const placemark = `
       <Placemark>
-        <name>Astilla - ${a.localidad}</name>
+        <name>Fragmento - ${a.localidad}</name>
         <description><![CDATA[${desc}]]></description>
-        <styleUrl>#astillaStyle</styleUrl>
+        <styleUrl>#fragmentoStyle</styleUrl>
         <Point>
           <coordinates>${a.lng},${a.lat}</coordinates>
         </Point>
@@ -185,13 +185,51 @@ class Exporter {
     }
   }
 
-  static download(filename, text) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:application/vnd.google-earth.kml+xml;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  static async download(filename, text) {
+    // Check if running in Capacitor (native app)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      try {
+        // Use Capacitor plugins from global scope
+        const Filesystem = window.Capacitor.Plugins.Filesystem;
+        const Share = window.Capacitor.Plugins.Share;
+
+        if (!Filesystem || !Share) {
+          throw new Error('Plugins de Capacitor no disponibles');
+        }
+
+        // Write file to cache directory
+        const result = await Filesystem.writeFile({
+          path: filename,
+          data: text,
+          directory: 'CACHE',
+          encoding: 'utf8'
+        });
+
+        // Share the file so user can save it wherever they want
+        await Share.share({
+          title: 'Exportar KML',
+          text: 'Archivo KML de Paleo Heritage',
+          url: result.uri,
+          dialogTitle: 'Guardar archivo KML'
+        });
+
+        return true;
+      } catch (error) {
+        console.error('Error saving file on native:', error);
+        // Fallback to alert
+        alert('Error al guardar el archivo: ' + error.message);
+        return false;
+      }
+    } else {
+      // Web fallback - use data URL download
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:application/vnd.google-earth.kml+xml;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      return true;
+    }
   }
 }

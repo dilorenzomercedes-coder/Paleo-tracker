@@ -51,7 +51,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 
 <body>
@@ -69,7 +69,7 @@
         <button id="btn-export" class="btn-primary" style="margin-right: 5px; display: none;">⬇️ Exportar KML</button>
         <button id="btn-backup" class="btn-secondary" style="margin-right: 5px; display: none;">💾 Backup</button>
         <button id="btn-restore" class="btn-secondary" style="margin-right: 5px; display: none;">📂 Importar</button>
-        <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+        <button id="btn-repair" class="btn-danger" style="margin-right: 5px;">🛠️ Reparar</button>
         <select id="role-selector" class="role-select">
           <option value="admin">Administrador</option>
           <option value="collector">Colector</option>
@@ -221,24 +221,24 @@
         </div>
       </section>
 
-      <!-- Tab: Astillas -->
-      <section id="tab-astillas" class="tab-content">
+      <!-- Tab: Fragmentos (antes Astillas) -->
+      <section id="tab-fragmentos" class="tab-content">
         <div class="section-header">
-          <h2>Registro de Astillas</h2>
-          <button class="btn-primary" id="btn-new-astilla">+ Nueva Astilla</button>
+          <h2>Registro de Fragmentos</h2>
+          <button class="btn-primary" id="btn-new-fragmento">+ Nuevo Fragmento</button>
         </div>
 
-        <div id="astillas-list" class="data-list">
-          <div class="empty-state">No hay astillas registradas.</div>
+        <div id="fragmentos-list" class="data-list">
+          <div class="empty-state">No hay fragmentos registrados.</div>
         </div>
 
-        <div id="astillas-form-container" class="form-overlay hidden">
+        <div id="fragmentos-form-container" class="form-overlay hidden">
           <div class="form-card">
             <div class="form-header">
-              <h3>Nueva Astilla</h3>
-              <button class="btn-close" id="btn-close-astilla">&times;</button>
+              <h3>Nuevo Fragmento</h3>
+              <button class="btn-close" id="btn-close-fragmento">&times;</button>
             </div>
-            <form id="form-astilla">
+            <form id="form-fragmento">
               <div class="form-group">
                 <label>Fecha</label>
                 <input type="date" name="fecha" required>
@@ -254,19 +254,19 @@
               <div class="form-group">
                 <label>Foto</label>
                 <div class="file-upload-wrapper">
-                  <input type="file" name="foto" accept="image/*" capture="environment" id="astilla-foto">
-                  <label for="astilla-foto" class="file-upload-label">
+                  <input type="file" name="foto" accept="image/*" capture="environment" id="fragmento-foto">
+                  <label for="fragmento-foto" class="file-upload-label">
                     <span class="icon">📷</span> Tomar/Subir Foto
                   </label>
                 </div>
-                <div id="astilla-foto-preview" class="image-preview"></div>
+                <div id="fragmento-foto-preview" class="image-preview"></div>
               </div>
               <div class="form-group">
                 <label>Ubicación (GPS)</label>
                 <div class="gps-controls">
-                  <button type="button" class="btn-secondary btn-small" id="btn-capture-astilla">📍 Capturar
+                  <button type="button" class="btn-secondary btn-small" id="btn-capture-fragmento">📍 Capturar
                     GPS</button>
-                  <span class="gps-status" id="astilla-gps-status"></span>
+                  <span class="gps-status" id="fragmento-gps-status"></span>
                 </div>
                 <div class="coords-row">
                   <div class="coord-input">
@@ -284,7 +284,7 @@
                 <textarea name="observaciones" rows="3" placeholder="Notas adicionales (opcional)"></textarea>
               </div>
               <div class="form-actions">
-                <button type="submit" class="btn-primary full-width">Guardar Astilla</button>
+                <button type="submit" class="btn-primary full-width">Guardar Fragmento</button>
               </div>
             </form>
           </div>
@@ -294,7 +294,7 @@
       <!-- Tab: Caminos -->
       <section id="tab-caminos" class="tab-content">
         <div class="section-header">
-          <h2>Caminos y Rutas</h2>
+          <h2>Mapas</h2>
           <div class="actions">
             <label for="kml-upload" class="btn-secondary">📂 Cargar KML/KMZ</label>
             <input type="file" id="kml-upload" accept=".kml,.kmz" hidden>
@@ -371,10 +371,10 @@
             </div>
             <div class="filter-row">
               <label class="checkbox-label">
-                <input type="checkbox" id="filter-astillas" checked>
-                <span class="icon">🦴</span> Astillas
+                <input type="checkbox" id="filter-fragmentos" checked>
+                <span class="icon">🦴</span> Fragmentos
               </label>
-              <select id="filter-astillas-folder" class="folder-select">
+              <select id="filter-fragmentos-folder" class="folder-select">
                 <option value="all">Todas las carpetas</option>
               </select>
             </div>
@@ -392,7 +392,7 @@
           </div>
           <div class="legend-item">
             <span class="legend-icon">🦴</span>
-            <span>Astillas</span>
+            <span>Fragmentos</span>
           </div>
           <div class="legend-item">
             <span class="legend-icon" style="color: #FF5722;">━━</span>
@@ -403,6 +403,80 @@
         <div id="routes-list" class="routes-list">
           <h4>Rutas Cargadas</h4>
           <div id="routes-items"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Documentación -->
+      <section id="tab-documentacion" class="tab-content">
+        <div class="section-header">
+          <h2>Documentación</h2>
+        </div>
+
+        <!-- Document Folders Grid -->
+        <div class="doc-folders-grid" id="doc-folders-root">
+          <!-- Cards for fixed folders -->
+          <div class="doc-folder-card" data-category="Permisos">
+            <span class="folder-icon">📋</span>
+            <h3>Permisos</h3>
+            <small id="count-permisos">0 archivos</small>
+          </div>
+          <div class="doc-folder-card" data-category="ATS">
+            <span class="folder-icon">📋</span>
+            <h3>ATS</h3>
+            <small id="count-ats">0 archivos</small>
+          </div>
+          <div class="doc-folder-card" data-category="IPCR">
+            <span class="folder-icon">📋</span>
+            <h3>IPCR</h3>
+            <small id="count-ipcr">0 archivos</small>
+          </div>
+          <div class="doc-folder-card" data-category="Alta Spot">
+            <span class="folder-icon">📋</span>
+            <h3>Alta Spot</h3>
+            <small id="count-altaspot">0 archivos</small>
+          </div>
+        </div>
+
+        <!-- Document List View (Hidden by default) -->
+        <div id="doc-list-view" class="hidden">
+          <div class="section-header" style="margin-bottom: 10px;">
+            <button class="btn-secondary btn-small" id="btn-back-docs">⬅ Volver</button>
+            <h3 id="current-doc-category-title" style="margin: 0;">Categoría</h3>
+            <button class="btn-primary btn-small" id="btn-add-doc">+ Nuevo</button>
+          </div>
+          <div id="doc-items-container" class="data-list">
+            <!-- Doc items injected here -->
+          </div>
+        </div>
+
+        <!-- Add Document Modal -->
+        <div id="doc-form-container" class="form-overlay hidden">
+          <div class="form-card">
+            <div class="form-header">
+              <h3>Agregar Documento</h3>
+              <button class="btn-close" id="btn-close-doc">&times;</button>
+            </div>
+            <form id="form-doc">
+              <input type="hidden" name="category" id="doc-category-input">
+              <div class="form-group">
+                <label>Nombre / Título</label>
+                <input type="text" name="title" required placeholder="Ej. Permiso 2024">
+              </div>
+              <div class="form-group">
+                <label>Archivo (Imagen o PDF)</label>
+                <div class="file-upload-wrapper">
+                  <input type="file" name="file" accept=".jpg,.jpeg,.png,.pdf" id="doc-file-input">
+                  <label for="doc-file-input" class="file-upload-label">
+                    <span class="icon">📎</span> Seleccionar Archivo
+                  </label>
+                </div>
+                <div id="doc-file-preview" class="image-preview"></div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn-primary full-width">Guardar</button>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -454,13 +528,17 @@
         <span class="icon">📍</span>
         <span class="label">Hallazgos</span>
       </button>
-      <button class="nav-item" data-target="tab-astillas">
+      <button class="nav-item" data-target="tab-fragmentos">
         <span class="icon">🦴</span>
-        <span class="label">Astillas</span>
+        <span class="label">Fragmentos</span>
       </button>
       <button class="nav-item" data-target="tab-caminos">
         <span class="icon">🗺️</span>
-        <span class="label">Caminos</span>
+        <span class="label">Mapas</span>
+      </button>
+      <button class="nav-item" data-target="tab-documentacion">
+        <span class="icon">📁</span>
+        <span class="label">Docs</span>
       </button>
     </nav>
   </div>
@@ -469,11 +547,76 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Simple KML parser for Leaflet (we might need to vendor this or use a CDN if available, for now I'll add a placeholder or simple logic) -->
-  <script src="js/store.js?v=2.2"></script>
-  <script src="js/export.js?v=2.2"></script>
-  <script src="js/ui.js?v=2.2"></script>
-  <script src="js/map.js?v=2.2"></script>
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/store.js?v=13"></script>
+  <script src="js/export.js?v=13"></script>
+  <script src="js/ui.js?v=13"></script>
+  <script src="js/map.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
+
+  <script>
+    // Repair Button Logic
+    document.getElementById('btn-repair').addEventListener('click', async () => {
+      // Check if running on file protocol
+      if (window.location.protocol === 'file:') {
+        if (!confirm('Estás ejecutando la app como archivo local. La reparación solo recargará la página. ¿Continuar?')) return;
+        window.location.reload();
+        return;
+      }
+
+      if (!confirm('¿Reparar la aplicación? Esto actualizará la versión y recargará la página. No se borrarán tus datos.')) return;
+
+      try {
+        // Unregister all SWs
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.unregister();
+            console.log('SW Unregistered');
+          }
+        }
+
+        // Clear Caches
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (const key of keys) {
+            await caches.delete(key);
+            console.log('Cache deleted:', key);
+          }
+        }
+
+        alert('Reparación completa. La página se recargará.');
+        window.location.reload(true);
+      } catch (e) {
+        console.error(e);
+        alert('Intentando recarga forzada...');
+        window.location.reload(true);
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      if (window.location.protocol !== 'file:') {
+        window.addEventListener('load', () => {
+          // Register at ROOT scope
+          navigator.serviceWorker.register('./service-worker.js')
+            .then(registration => {
+              console.log('SW Registered at root');
+              registration.update();
+            })
+            .catch(err => console.log('SW Registration failed', err));
+        });
+
+        // Refresh page when new SW takes control
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          window.location.reload();
+          refreshing = true;
+        });
+      } else {
+        console.log('Service Worker not supported on file:// protocol. Running in offline-only mode.');
+      }
+    }
+  </script>
 
   <!-- Debug Log -->
   <div id="debug-log" style="
